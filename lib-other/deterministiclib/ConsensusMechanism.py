@@ -1,9 +1,7 @@
 from cdecimal import Decimal
 import CustomMath as custommath
 def DemocracyRep(x):
-    v=[]
-    for i in range(len(x)):
-        v.append(1)
+    v = [1 for _ in range(len(x))]
     return(custommath.ReWeight(v))
 def GetRewardWeights(M, Rep=-1, alpha=Decimal('0.1')):
     if Rep==-1:
@@ -21,10 +19,11 @@ def GetRewardWeights(M, Rep=-1, alpha=Decimal('0.1')):
     New1=custommath.dot([custommath.GetWeight(Set1)], M)
     New2=custommath.dot([custommath.GetWeight(Set2)], M)
     def sub_f(a, b): return a-b
+
     def f(n): return sum(map(lambda x: x**2, map(sub_f, n[0], Old[0])))
+
     RefInd=f(New1)-f(New2)
-    if(RefInd<=0): AdjPrinComp = Set1  
-    else: AdjPrinComp = Set2  
+    AdjPrinComp = Set1 if (RefInd<=0) else Set2
     RowRewardWeighted=Rep
     if max(map(abs,AdjPrinComp))!=0:
         m=custommath.mean(Rep)
@@ -35,7 +34,7 @@ def GetRewardWeights(M, Rep=-1, alpha=Decimal('0.1')):
     SmoothedR=[]
     for i in range(len(Rep)):
         SmoothedR.append(alpha*RowRewardWeighted[i]+(1-alpha)*Rep[i])
-    Out = {"FirstL":FirstLoading, "OldRep":Rep, "ThisRep":RowRewardWeighted, "SmoothRep":SmoothedR}  
+    Out = {"FirstL":FirstLoading, "OldRep":Rep, "ThisRep":RowRewardWeighted, "SmoothRep":SmoothedR}
     return(Out)
 def v_dot(a, b): 
     def mul(c, d): return c*d

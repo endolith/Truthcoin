@@ -25,7 +25,7 @@ def GetRewardWeights(M, Rep=-1, Alpha=.1, Verbose=False):
     
     if type(Rep) is int:
         Rep = DemocracyCoin(M)     
-    
+
     if Verbose:
         print("****************************************************")
         print("Begin 'GetRewardWeights'")
@@ -36,39 +36,39 @@ def GetRewardWeights(M, Rep=-1, Alpha=.1, Verbose=False):
         print("Reputation:")
         print(Rep)
         print("")
-    
+
     Results = WeightedPrinComp(M,Rep)
-    
+
     Rep = GetWeight(Rep)  #Need the old reputation back for the rest of this.
-    
+
     FirstLoading = Results[0] #The first loading is designed to indicate which Decisions were more 'agreed-upon' than others. 
     FirstScore   = Results[1] #The scores show loadings on consensus (to what extent does this observation represent consensus?)
- 
+
     if Verbose:
         print("First Loading:",end=' '); print(FirstLoading); print("First Score:",end=' '); print(FirstScore)
-        
+
     #PCA, being an abstract factorization, is incapable of determining anything absolute.
     #Therefore the results of the entire procedure would theoretically be reversed if the average state of Decisions changed from TRUE to FALSE.
     #Because the average state of Decisions is a function both of randomness and the way the Decisions are worded, I quickly check to see which
     #  of the two possible 'new' reputation vectors had more opinion in common with the original 'old' reputation.
     #  I originally tried doing this using math but after multiple failures I chose this ad hoc way.
-    
+
     Set1 =  FirstScore+abs(min(FirstScore))
     Set2 =  FirstScore-max(FirstScore) 
-    
+
     Old = dot(Rep.T,M)
 
     New1 = dot(GetWeight(Set1), M)
     New2 = dot(GetWeight(Set2), M)
-    
+
     #Difference in Sum of squared errors, if >0, then New1 had higher errors (use New2), and conversely if <0 use 1.
     RefInd = sum( (New1-Old)**2) -  sum( (New2-Old)**2)
-    
+
     if(RefInd<=0):
-        AdjPrinComp = Set1  
+        AdjPrinComp = Set1
     if(RefInd>0):
         AdjPrinComp = Set2  
-    
+
     if Verbose:
         print("")
         print("Estimations using: Previous Rep, Option 1, Option 2")
@@ -76,28 +76,31 @@ def GetRewardWeights(M, Rep=-1, Alpha=.1, Verbose=False):
         print("")
         print("Previous period reputations, Option 1, Option 2, Selection")
         print( vstack([ Rep.T, Set1, Set2, AdjPrinComp]).T )
-  
+
     #Declared here, filled below (unless there was a perfect consensus).
     RowRewardWeighted = Rep # (set this to uniform if you want a passive diffusion toward equality when people cooperate [not sure why you would]). Instead diffuses towards previous reputation (Smoothing does this anyway).
     if(max(abs(AdjPrinComp))!=0):
         RowRewardWeighted = GetWeight( AdjPrinComp * (Rep/mean(Rep)).T ) #Overwrite the inital declaration IFF there wasn't perfect consensus.
     #note: Rep/mean(Rep) is a correction ensuring Reputation is additive. Therefore, nothing can be gained by splitting/combining Reputation into single/multiple accounts.
-          
+
     #Freshly-Calculated Reward (Reputation) - Exponential Smoothing
     #New Reward: RowRewardWeighted
     #Old Reward: Rep
     SmoothedR = Alpha*(RowRewardWeighted) + (1-Alpha)*Rep.T
-      
+
     if Verbose:
         print("")
         print("Corrected for Additivity , Smoothed _1 period")
         print( vstack([RowRewardWeighted, SmoothedR]).T )
-      
-    #Return Data
-    Out = {"FirstL":FirstLoading, "OldRep":Rep.T, "ThisRep":RowRewardWeighted, "SmoothRep":SmoothedR}  
+
     #Keep the factors and time information along for the ride, they are interesting.
-    
-    return(Out)
+
+    return {
+        "FirstL": FirstLoading,
+        "OldRep": Rep.T,
+        "ThisRep": RowRewardWeighted,
+        "SmoothRep": SmoothedR,
+    }
 
 
 def GetDecisionOutcomes(Mtemp, ScaledIndex, Rep=-1, Verbose=False):
@@ -318,9 +321,8 @@ def Factory(M0, Scales=None, Rep=-1, CatchP=.1, MaxRow=5000, Verbose=False):
     NAbonusC = GetWeight(ParticipationC)
     ColBonus = NAbonusC * PercentNA + ConReward * (1 - PercentNA)
 
-    # Present Results
-    Output = {  # Using this to set inclusion fees
-                # Using this to set Catch Parameter
+    return {  # Using this to set inclusion fees
+        # Using this to set Catch Parameter
         'Original': M0.base,
         'Filled': Filled.base,
         'Agents': {
@@ -331,7 +333,7 @@ def Factory(M0, Scales=None, Rep=-1, CatchP=.1, MaxRow=5000, Verbose=False):
             'ParticipationR': ParticipationR.base,
             'RelativePart': NAbonusR.base,
             'RowBonus': RowBonus.base,
-            },
+        },
         'Decisions': {
             'First Loading': AdjLoadings,
             'DecisionOutcomes_Raw': DecisionOutcomes_Raw,
@@ -341,12 +343,10 @@ def Factory(M0, Scales=None, Rep=-1, CatchP=.1, MaxRow=5000, Verbose=False):
             'ParticipationC': ParticipationC,
             'Author Bonus': ColBonus,
             'DecisionOutcome_Final': DecisionOutcome_Final,
-            },
+        },
         'Participation': 1 - PercentNA,
         'Certainty': Avg_Certainty,
-        }
-
-    return Output
+    }
 
 
 #Long-Term
@@ -419,7 +419,7 @@ def DisplayResults(FactorObject):
 
 def TestConsensus():
     """Verifies function works as required. If False, check comments below for full expected results."""
-    
+
     VotesUM = array([[1,1,0,0], 
                [1,0,0,0],
                [1,1,0,0],
@@ -427,7 +427,7 @@ def TestConsensus():
                [0,0,1,1],
                [0,0,1,1]])            
     Votes = ma.masked_array(VotesUM, isnan(VotesUM))
-    
+
     Actual = DisplayResults(Factory(Votes))
     Expected = 0.228237569613
 

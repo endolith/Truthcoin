@@ -29,32 +29,31 @@ def QueryMove(ID,State,P):
     
     State = State - 1  #Python counting from zero
     S = exp(Markets[ID]['Shares']/Markets[ID]['B'])
-    
+
     #Need to exclude a state (more complicated to code in Python but fasters)
     Temp = ma.array(S, mask=False)
     Temp.mask[State] = True
-    
+
     Sstar = Markets[ID]['B']* ( log(P/(1-P)) + log(sum(Temp)) )
-    Marginal = Sstar - Markets[ID]['Shares'][State]
-    return(Marginal)
+    return Sstar - Markets[ID]['Shares'][State]
 
 
 
 def QueryCost(ID,State,S):
     """What price will the market-maker demand for a purchase of S shares? """ 
-    
+
     State = State - 1  #Python counting from zero
     B = Markets[ID]['B']
-  
+
     #Original Case
     S0 = copy( Markets[ID]['Shares'] )
     LMSR = B*log(sum(exp(S0/B)))
-  
+
     #Proposed Adjustment
     S1 = copy(S0)
     S1[State] = S1[State] + S
     LMSR2 = B*log(sum(exp(S1/B)))
-  
+
     return( LMSR2-LMSR )
 
 
@@ -103,15 +102,15 @@ def Buy(uID,ID,State,P,Verbose=True):
     if MarginalShares<0:
         return("Price already exceeds target. Sell shares or buy a Mutually Exclusive State (MES).")
     if Verbose:
-        print("Calulating Required Shares..." + str(MarginalShares))
-        print("Determining Cost of Trade..." + str(BaseCost))
-        print("Fee: " + str(Fee))
-      
+        print(f"Calulating Required Shares...{str(MarginalShares)}")
+        print(f"Determining Cost of Trade...{str(BaseCost)}")
+        print(f"Fee: {str(Fee)}")
+
     #Reduce Funds, add Shares
     if Users[uID]['Cash'] < TotalCost:
         return("Insufficient Funds")
-    StateName = 'State ' + str(State) # As far as the user is concerned, State 1 is the first state (not State 0 as python is concerned)
-    Users[uID]['Cash'] =  Users[uID]['Cash'] - TotalCost 
+    StateName = f'State {str(State)}'
+    Users[uID]['Cash'] =  Users[uID]['Cash'] - TotalCost
     #Is there an entry for this already?
     try:
         OldShares = Users[uID][ID][StateName]
@@ -122,16 +121,16 @@ def Buy(uID,ID,State,P,Verbose=True):
             Users[uID][ID].update( {StateName: MarginalShares} )
         except KeyError: # (first time buying in this market)
             Users[uID].update( {ID: {StateName: MarginalShares}} )
-    
+
     #Credit Funds, add Shares
     Markets[ID]['Balance'] = Markets[ID]['Balance'] + BaseCost
     Markets[ID]['FeeBalance'] = Markets[ID]['FeeBalance'] + Fee
     FlatMarket = copy(Markets[ID]['Shares']).flatten()
     FlatMarket[(State-1)] = FlatMarket[(State-1)] + MarginalShares
     Markets[ID]['Shares'] = FlatMarket.reshape( Markets[ID]['Shares'].shape ) #restore original shape
-  
+
     if Verbose:
-        print("Bought " + str(MarginalShares) + " for " + str(TotalCost) + ".")
+        print(f"Bought {str(MarginalShares)} for {str(TotalCost)}.")
     return((MarginalShares,TotalCost))
     
 def Sell(uID,ID,State,P,Verbose=True):
@@ -146,11 +145,11 @@ def Sell(uID,ID,State,P,Verbose=True):
     if MarginalShares>0:
         return("Price already exceeds target. Sell shares or buy a Mutually Exclusive State (MES).")
     if Verbose:
-        print("Calulating Required Shares..." + str(MarginalShares))
-        print("Determining Cost of Trade..." + str(BaseCost))
-      
+        print(f"Calulating Required Shares...{str(MarginalShares)}")
+        print(f"Determining Cost of Trade...{str(BaseCost)}")
+
     #Reduce Shares, add Funds
-    StateName = 'State ' + str(State) # As far as the user is concerned, State 1 is the first state (not State 0 as python is concerned)  
+    StateName = f'State {str(State)}'
     try:
         OldShares = Users[uID][ID][StateName]
     except KeyError:
@@ -165,9 +164,9 @@ def Sell(uID,ID,State,P,Verbose=True):
     FlatMarket = copy(Markets[ID]['Shares']).flatten()
     FlatMarket[(State-1)] = FlatMarket[(State-1)] + MarginalShares
     Markets[ID]['Shares'] = FlatMarket.reshape( Markets[ID]['Shares'].shape ) #restore original shape
-  
+
     if Verbose:
-        print("Sold " + str(-1*MarginalShares) + " for " + str(-1*TotalCost) + ".")
+        print(f"Sold {str(-1 * MarginalShares)} for {str(-1 * TotalCost)}.")
     return((MarginalShares,TotalCost))
 
 

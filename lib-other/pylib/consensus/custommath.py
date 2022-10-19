@@ -20,15 +20,14 @@ def WeightedMedian(data, weights):
     s_data, s_weights = map(array, zip(*sorted(zip(data, weights))))
     midpoint = 0.5 * sum(s_weights)
     if any(weights > midpoint):
-        w_median = median(data[weights == max(weights)])
-    else:
-        cs_weights = cumsum(s_weights)
-        idx = where(cs_weights <= midpoint)[0][-1]
-        if cs_weights[idx] == midpoint:
-            w_median = mean(s_data[idx:idx+2])
-        else:
-            w_median = s_data[idx+1]
-    return w_median
+        return median(data[weights == max(weights)])
+    cs_weights = cumsum(s_weights)
+    idx = where(cs_weights <= midpoint)[0][-1]
+    return (
+        mean(s_data[idx : idx + 2])
+        if cs_weights[idx] == midpoint
+        else s_data[idx + 1]
+    )
 
 def Rescale(UnscaledMatrix, Scales):
     """Forces a matrix of raw (user-supplied) information
@@ -39,11 +38,8 @@ def Rescale(UnscaledMatrix, Scales):
     scaled-range (which itself is max-min).
 
     """
-    # Calulate multiplicative factors   
-    InvSpan = []
-    for scale in Scales:
-        InvSpan.append(1 / float(scale["max"] - scale["min"]))
-
+    # Calulate multiplicative factors
+    InvSpan = [1 / float(scale["max"] - scale["min"]) for scale in Scales]
     # Recenter
     OutMatrix = ma.copy(UnscaledMatrix)
     cols = UnscaledMatrix.shape[1]
@@ -91,10 +87,7 @@ def Influence(Weight):
     """Takes a normalized Vector (one that sums to 1), and computes relative strength of the indicators."""
     N = len(Weight)
     Expected = [[1/N]]*N
-    Out = []
-    for i in range(1, N):
-        Out.append(Weight[i]/Expected[i])
-    return(Out)
+    return [Weight[i]/Expected[i] for i in range(1, N)]
 
 
 def ReWeight(Vec):
@@ -112,9 +105,7 @@ def ReverseMatrix(Mat):  #tecnically an array now, sorry about the terminology c
     
 def DemocracyCoin(Mat):
     """For testing, easier to assume uniform coin distribution."""
-    # print("NOTE: No coin distribution given, assuming democracy [one row, one vote].")
-    Rep = GetWeight( array([[1]]*len(Mat) )) #Uniform weights if none were provided.
-    return( Rep )
+    return GetWeight( array([[1]]*len(Mat) ))
     
 
 def WeightedCov(Mat,Rep=-1):
@@ -145,5 +136,3 @@ def WeightedPrinComp(Mat,Rep=-1):
 
     return(L,S)
 
-if __name__ == "__main__":
-    pass

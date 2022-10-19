@@ -4,9 +4,7 @@ def AsMatrix(v): return map(lambda i: [i], v)
 def matrix_p(v): return type(v[0])==list
 def mean(v): return sum(v)*Decimal('1.0')/len(v)
 def replace_na(x, m):
-    if type(x) in [int, float]:
-        return x
-    return m
+    return x if type(x) in [int, float] else m
 def GetWeight(Vec, AddMean=False):
     new=map(abs, Vec)
     m=mean(new)
@@ -22,9 +20,7 @@ def Catch(X, Tolerance=0):
     t=Tolerance/2
     if dec_greater_than(X,h+t):
         return Decimal('1')
-    if dec_greater_than(h-t, X):
-        return Decimal('0')
-    return Decimal('0.5')
+    return Decimal('0') if dec_greater_than(h-t, X) else Decimal('0.5')
 def median_walker(so_far_w, limit, x, w, prev_x):
     if so_far_w>limit: return prev_x
     if so_far_w==limit: return mean([Decimal('1.0')*prev_x, x[0]])
@@ -37,9 +33,7 @@ def switch_row_cols(m):
         m=AsMatrix(m)
     out=[]
     for i in range(len(m[0])):
-        newrow=[]
-        for row in m:
-            newrow.append(row[i])
+        newrow = [row[i] for row in m]
         out.append(newrow)
     return out
 def MeanNA(v):
@@ -72,52 +66,42 @@ def dot(m, n):
     n=v2m(n)
     out=[]
     for i in range(len(m)):
-        row=[]
-        for j in range(len(n[0])):
-            row.append(sum( m[i][k] * map(lambda x: x[j], n)[k] for k in range(len(m[0]))))
+        row = [
+            sum(m[i][k] * map(lambda x: x[j], n)[k] for k in range(len(m[0])))
+            for j in range(len(n[0]))
+        ]
+
         out.append(row)
     return out
 def weighted_sample_mean(matrix, weighting):
     weighting=ReWeight(weighting)
     matrix=dot(matrix, weighting)
-    out=[]
-    for i in range(len(matrix[0])):
-        n=0
-        for m in matrix:
-            n+=m[i]
-        out.append(n)
-    return out
+    return [sum(m[i] for m in matrix) for i in range(len(matrix[0]))]
 def subtract_vector(m, v):
     if type(v[0])==list and len(v[0])>1: v=v[0]
     if not matrix_p(v):
         v=AsMatrix(v)
     out=[]
     for row in range(len(m)):
-        n=[]
-        for column in range(len(v)):
-            n.append(m[row][column]-v[column][0])
+        n = [m[row][column]-v[column][0] for column in range(len(v))]
         out.append(n)
     return out
 def v_average(M, W):
     M=copy.deepcopy(M)
     for row in range(len(M)):
         M[row]=map(lambda x: x*W[row],  M[row])
-    out=[]
-    for i in range(len(M[0])):
-        n=0
-        for j in range(len(M)):
-            n+=M[j][i]
-        out.append(n)
-    return out
+    return [sum(M[j][i] for j in range(len(M))) for i in range(len(M[0]))]
 def ma_multiply(m, v):
     out=[]
     if type(v[0])==list and len(v)>0:#if v is vertical
-        for row in range(len(m)):
-            out.append(map(lambda x: x*v[row][0], m[row]))
+        out.extend(map(lambda x: x*v[row][0], m[row]) for row in range(len(m)))
     else:
         if type(v[0])==list: v=v[0]
-        for row in range(len(m)):
-            out.append(map(lambda i: m[row][i]*v[i], range(len(m[0]))))
+        out.extend(
+            map(lambda i: m[row][i] * v[i], range(len(m[0])))
+            for row in range(len(m))
+        )
+
     return out
 def WeightedCov(Mat, Rep=-1):#should only output square matrices.
     if type(Rep) is int: Rep=map(lambda x: x/Decimal(len(Mat)), [1]*len(Mat))

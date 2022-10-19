@@ -78,9 +78,7 @@ class TestCustommath(unittest.TestCase):
                     np.array([1.]),
                     np.array([1.33333333])]
         actual = custom.Influence(custom.GetWeight(self.c2))
-        result = []
-        for i in range(len(actual)):
-            result.append((actual[i] - expected[i])**2)
+        result = [(actual[i] - expected[i])**2 for i in range(len(actual))]
         self.assertLess(sum(result), 0.000000000001)
 
     def test_ReWeight(self):
@@ -111,9 +109,7 @@ class TestCustommath(unittest.TestCase):
                               1.17643821,
                               1.17643821])
         actual = custom.WeightedPrinComp(self.votes)[1]
-        result = []
-        for i in range(len(actual)):
-            result.append((actual[i] - expected[i])**2)
+        result = [(actual[i] - expected[i])**2 for i in range(len(actual))]
         self.assertLess(sum(result), 0.000000000001)
 
     def tearDown(self):

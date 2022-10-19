@@ -258,15 +258,13 @@ def pythag(a,b):
     absb = abs(b)
     if absa > absb: return absa*sqrt(one+(absb/absa)**2)
     else:
-        if absb == zero: return zero
-        else: return absb*sqrt(one+(absa/absb)**2)
+        return zero if absb == zero else absb*sqrt(one+(absa/absb)**2)
 
 def transpose(a):
     '''Compute the transpose of a matrix.'''
     m = len(a)
     n = len(a[0])
-    at = []
-    for i in range(n): at.append([zero]*m)
+    at = [[zero]*m for _ in range(n)]
     for i in range(m):
         for j in range(n):
             at[j][i]=a[i][j]
